@@ -27,6 +27,10 @@ export const VISION_CONE_DEG = 95;
 export const VISION_RANGE = 350;
 export const VISION_GLOW_RADIUS = 90;
 
+// 코어 자체가 내는 근접 미광. 터렛 모듈 유무와 무관하게 상시 켜져 있어
+// 아주 가까이 붙은 적을 감지한다.
+export const CORE_GLOW_RADIUS = 70;
+
 export const TETHER_HULL_REGEN_PER_SEC = SUB_MAX_HULL * 0.025;
 export const TETHER_SHIELD_REGEN_PER_SEC = 10;
 export const TETHER_LEAVE_GRACE_SEC = 7;
