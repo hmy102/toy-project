@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PASSIVE_DEFS,
   PASSIVE_MAX_LEVEL,
   PLANKTON_EXP_VALUE,
   PLANKTON_SPAWN_INTERVAL_SEC,
@@ -135,6 +136,28 @@ describe("무기 자동 조준", () => {
     monster.visible = true;
     updateWeapons(world, 0.016, 1.1);
     expect(monster.hp).toBeLessThan(14);
+  });
+});
+
+describe("초전도 축전지", () => {
+  it("레벨을 올리면 테슬라 방전 코일의 발사 간격만 줄어든다", () => {
+    const fireOnce = (capacitorLevel: number) => {
+      const world = createWorld();
+      world.weapons.tesla.level = 1;
+      world.weapons.harpoon.level = 1;
+      world.passives.capacitor.level = capacitorLevel;
+      world.monsters.push(
+        makeMonster({ id: 9, kind: "krill", pos: { x: world.submarine.pos.x + 50, y: world.submarine.pos.y }, hp: 14, maxHp: 14 }),
+      );
+      updateWeapons(world, 0.016, 1);
+      return { tesla: world.weapons.tesla.cooldownRemaining, harpoon: world.weapons.harpoon.cooldownRemaining };
+    };
+
+    const base = fireOnce(0);
+    const boosted = fireOnce(PASSIVE_MAX_LEVEL);
+
+    expect(boosted.tesla).toBeCloseTo(base.tesla * (1 - PASSIVE_DEFS.capacitor.perLevel * PASSIVE_MAX_LEVEL));
+    expect(boosted.harpoon).toBeCloseTo(base.harpoon);
   });
 });
 

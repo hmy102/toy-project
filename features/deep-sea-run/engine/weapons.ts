@@ -35,6 +35,12 @@ function passiveLevel(world: WorldState, passiveId: PassiveId): number {
   return world.passives[passiveId].level;
 }
 
+// 초전도 축전지는 대응 무기인 테슬라 방전 코일의 발사 간격에만 붙는다.
+function passiveCooldownMultiplier(world: WorldState, weaponId: WeaponId): number {
+  if (weaponId !== "tesla") return 1;
+  return 1 - PASSIVE_DEFS.capacitor.perLevel * passiveLevel(world, "capacitor");
+}
+
 function visibleMonsters(world: WorldState): Monster[] {
   return world.monsters.filter((m) => m.hp > 0 && m.visible);
 }
@@ -213,7 +219,7 @@ export function updateWeapons(world: WorldState, dt: number, now: number): void 
 
     if (fired) {
       const stats = getEffectiveWeaponStats(weaponId, slot);
-      slot.cooldownRemaining = stats.cooldown * cooldownMult;
+      slot.cooldownRemaining = stats.cooldown * cooldownMult * passiveCooldownMultiplier(world, weaponId);
     }
   });
 }
