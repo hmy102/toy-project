@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PASSIVE_DEFS, RUN_DURATION_SEC, WEAPON_DEFS } from "../engine/constants";
+import type { WeaponId } from "../engine/types";
 import type { HudSnapshot } from "../useGameLoop";
 
 function formatClock(totalSec: number): string {
@@ -94,30 +95,31 @@ export function Hud({ snapshot }: { snapshot: HudSnapshot }) {
           />
         </div>
 
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex gap-1">
-            {(Object.keys(snapshot.weapons) as (keyof typeof snapshot.weapons)[])
-              .filter((id) => snapshot.weapons[id].level > 0)
-              .map((id) => {
-                const slot = snapshot.weapons[id];
-                const name = slot.overcharged ? WEAPON_DEFS[id].overcharge.name : WEAPON_DEFS[id].name;
-                return (
-                  <Badge key={id} variant={slot.overcharged ? "default" : "secondary"}>
+        <div className="flex min-w-0 flex-1 flex-wrap items-start justify-end gap-x-2 gap-y-1">
+          {(Object.keys(snapshot.weapons) as WeaponId[])
+            .filter((id) => snapshot.weapons[id].level > 0)
+            .map((id) => {
+              const slot = snapshot.weapons[id];
+              const name = slot.overcharged ? WEAPON_DEFS[id].overcharge.name : WEAPON_DEFS[id].name;
+              const passiveId = WEAPON_DEFS[id].passiveId;
+              const passiveLevel = snapshot.passives[passiveId].level;
+              return (
+                <div key={id} className="flex flex-col items-center gap-1">
+                  <Badge variant={slot.overcharged ? "default" : "secondary"}>
                     {name} Lv.{slot.level}
                     {slot.overcharged ? "+" : ""}
                   </Badge>
-                );
-              })}
-          </div>
-          <div className="flex gap-1">
-            {(Object.keys(snapshot.passives) as (keyof typeof snapshot.passives)[])
-              .filter((id) => snapshot.passives[id].level > 0)
-              .map((id) => (
-                <Badge key={id} variant="outline" className="border-white/30 text-white">
-                  {PASSIVE_DEFS[id].name} Lv.{snapshot.passives[id].level}
-                </Badge>
-              ))}
-          </div>
+                  <Badge
+                    variant="outline"
+                    className={
+                      passiveLevel > 0 ? "border-white/30 text-white" : "border-dashed border-white/15 text-white/40"
+                    }
+                  >
+                    {PASSIVE_DEFS[passiveId].name} {passiveLevel > 0 ? `Lv.${passiveLevel}` : "미장착"}
+                  </Badge>
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>
