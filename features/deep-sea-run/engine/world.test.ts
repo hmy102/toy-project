@@ -8,17 +8,23 @@ import {
   SUB_MAX_HULL,
   SUB_MAX_SHIELD,
   TETHER_LEAVE_GRACE_SEC,
+  VISION_CONE_DEG,
+  VISION_RANGE_BASE,
+  VISION_RANGE_MAX,
+  VISION_RANGE_PER_LEVEL,
   WEAPON_DEFS,
   WEAPON_MAX_LEVEL,
   requiredExpForLevel,
+  visionRangeForLevel,
 } from "./constants";
 import { applyDamageToSubmarine, createSubmarine, updateTetherEffects } from "./submarine";
 import { createCore } from "./core";
 import { applyUpgradeChoice, buildUpgradePool } from "./growth";
+import { isInVisionCone } from "./collision";
 import { damageMonster } from "./monsters";
 import { updateWeapons } from "./weapons";
 import { createWorld } from "./world";
-import type { Monster, PassiveId, WeaponId } from "./types";
+import type { Monster, PassiveId, Submarine, WeaponId } from "./types";
 
 describe("배터리 실드와 선체 체력", () => {
   it("실드가 남아있는 동안에는 선체 체력이 줄지 않는다", () => {
@@ -239,5 +245,34 @@ describe("레벨업 선택지 구성", () => {
     expect(passiveIds.sort()).toEqual([WEAPON_DEFS.harpoon.passiveId, WEAPON_DEFS.tesla.passiveId].sort());
     expect(passiveIds).not.toContain(WEAPON_DEFS.sonar.passiveId);
     expect(passiveIds).not.toContain(WEAPON_DEFS.torpedo.passiveId);
+  });
+});
+
+describe("서치라이트 성장", () => {
+  const aimedAt = (sub: Submarine, distance: number, offsetDeg: number) => ({
+    x: sub.pos.x + Math.cos(sub.aimAngle + (offsetDeg * Math.PI) / 180) * distance,
+    y: sub.pos.y + Math.sin(sub.aimAngle + (offsetDeg * Math.PI) / 180) * distance,
+  });
+
+  it("레벨이 오르면 같은 자리의 적이 사거리 안으로 들어온다", () => {
+    const sub = createSubmarine();
+    const target = aimedAt(sub, VISION_RANGE_BASE + 40, 0);
+
+    expect(isInVisionCone(sub, target, 1)).toBe(false);
+    expect(isInVisionCone(sub, target, 5)).toBe(true);
+  });
+
+  it("사거리만 늘고 부채꼴 각도는 레벨과 무관하게 고정이다", () => {
+    const sub = createSubmarine();
+    const beside = aimedAt(sub, 200, VISION_CONE_DEG / 2 + 10);
+
+    expect(isInVisionCone(sub, beside, 1)).toBe(false);
+    expect(isInVisionCone(sub, beside, 30)).toBe(false);
+  });
+
+  it("사거리 증가에는 상한이 있다", () => {
+    expect(visionRangeForLevel(1)).toBe(VISION_RANGE_BASE);
+    expect(visionRangeForLevel(2)).toBe(VISION_RANGE_BASE + VISION_RANGE_PER_LEVEL);
+    expect(visionRangeForLevel(999)).toBe(VISION_RANGE_MAX);
   });
 });

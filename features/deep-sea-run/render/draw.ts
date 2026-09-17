@@ -1,9 +1,10 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  VISION_BEAM_SOLID_RANGE,
   VISION_CONE_DEG,
   VISION_GLOW_RADIUS,
-  VISION_RANGE,
+  visionRangeForLevel,
 } from "../engine/constants";
 import type { WorldState } from "../engine/types";
 import { drawCore, drawCoreNearLight, drawTurretBeam } from "./core";
@@ -13,6 +14,7 @@ import { drawSubmarine } from "./submarine";
 function drawVision(ctx: CanvasRenderingContext2D, world: WorldState): void {
   const sub = world.submarine;
   const half = (VISION_CONE_DEG * Math.PI) / 180 / 2;
+  const range = visionRangeForLevel(world.level);
 
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -25,15 +27,28 @@ function drawVision(ctx: CanvasRenderingContext2D, world: WorldState): void {
   ctx.arc(sub.pos.x, sub.pos.y, VISION_GLOW_RADIUS, 0, Math.PI * 2);
   ctx.fill();
 
+  // 밝은 구간의 길이를 고정해 두면, 사거리가 늘어난 만큼이 옅은 꼬리로 남아
+  // "빛이 더 멀리 나갔다"가 눈에 들어온다. 그라디언트 전체를 늘리면 밝기 분포가
+  // 그대로 확대될 뿐이라 거리 변화를 읽을 수 없다.
+  const solidStop = Math.min(0.62, VISION_BEAM_SOLID_RANGE / range);
   ctx.beginPath();
   ctx.moveTo(sub.pos.x, sub.pos.y);
-  ctx.arc(sub.pos.x, sub.pos.y, VISION_RANGE, sub.aimAngle - half, sub.aimAngle + half);
+  ctx.arc(sub.pos.x, sub.pos.y, range, sub.aimAngle - half, sub.aimAngle + half);
   ctx.closePath();
-  const cone = ctx.createRadialGradient(sub.pos.x, sub.pos.y, 0, sub.pos.x, sub.pos.y, VISION_RANGE);
-  cone.addColorStop(0, "rgba(210,235,255,0.28)");
-  cone.addColorStop(1, "rgba(210,235,255,0)");
+  const cone = ctx.createRadialGradient(sub.pos.x, sub.pos.y, 0, sub.pos.x, sub.pos.y, range);
+  cone.addColorStop(0, "rgba(210,235,255,0.3)");
+  cone.addColorStop(solidStop, "rgba(205,232,255,0.17)");
+  cone.addColorStop(0.9, "rgba(196,228,255,0.06)");
+  cone.addColorStop(1, "rgba(190,224,255,0.02)");
   ctx.fillStyle = cone;
   ctx.fill();
+
+  // 빛이 닿는 끝선. 어디까지 밝혀지는지를 한 줄로 못 박아 준다.
+  ctx.beginPath();
+  ctx.arc(sub.pos.x, sub.pos.y, range, sub.aimAngle - half, sub.aimAngle + half);
+  ctx.strokeStyle = "rgba(200,230,255,0.16)";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -73,7 +88,23 @@ function drawEffects(ctx: CanvasRenderingContext2D, world: WorldState, now: numb
     const t = (now - effect.bornAt) / effect.ttlSec;
     const alpha = Math.max(0, 1 - t);
 
-    if ((effect.kind === "pulse" || effect.kind === "core-discharge") && effect.pos && effect.radius) {
+    if (effect.kind === "vision-grow" && effect.radius) {
+      // 레벨업으로 늘어난 사거리까지 서치라이트 끝선이 밀려나가는 파동. 원이 아니라
+      // 실제 부채꼴을 따라가므로, 빛이 어디까지 길어졌는지가 그대로 읽힌다.
+      const sub = world.submarine;
+      const coneHalf = (VISION_CONE_DEG * Math.PI) / 180 / 2;
+      ctx.strokeStyle = `rgba(215,240,255,${alpha * 0.55})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(
+        sub.pos.x,
+        sub.pos.y,
+        effect.radius * (0.3 + 0.7 * t),
+        sub.aimAngle - coneHalf,
+        sub.aimAngle + coneHalf
+      );
+      ctx.stroke();
+    } else if ((effect.kind === "pulse" || effect.kind === "core-discharge") && effect.pos && effect.radius) {
       ctx.strokeStyle = `rgba(150,220,255,${alpha * 0.8})`;
       ctx.lineWidth = 3;
       ctx.beginPath();

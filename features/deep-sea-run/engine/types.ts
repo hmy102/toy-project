@@ -88,6 +88,7 @@ export interface Pickup {
 
 export type EffectKind =
   | "pulse"
+  | "vision-grow"
   | "explosion"
   | "lightning"
   | "stun-flash"

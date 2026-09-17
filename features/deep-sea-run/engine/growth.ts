@@ -9,9 +9,11 @@ import {
   PLANKTON_RING_MARGIN,
   PLANKTON_SPAWN_INTERVAL_SEC,
   SUB_RADIUS,
+  VISION_GROW_EFFECT_SEC,
   WEAPON_DEFS,
   WEAPON_MAX_LEVEL,
   requiredExpForLevel,
+  visionRangeForLevel,
 } from "./constants";
 import { circlesOverlap } from "./collision";
 import type {
@@ -98,8 +100,17 @@ export function applyUpgradeChoice(world: WorldState, choice: UpgradeChoice): vo
   }
 }
 
-function grantLevelUp(world: WorldState): void {
+function grantLevelUp(world: WorldState, now: number): void {
   world.level += 1;
+  // 넓어진 서치라이트 사거리를 한 번 훑어 보여 준다. 레벨업 선택을 마치고
+  // 런이 재개되는 순간 퍼지므로, 무엇이 늘었는지 그 자리에서 읽힌다.
+  world.effects.push({
+    id: world.nextEntityId++,
+    kind: "vision-grow",
+    radius: visionRangeForLevel(world.level),
+    bornAt: now,
+    ttlSec: VISION_GROW_EFFECT_SEC,
+  });
   const pool = buildUpgradePool(world);
   world.pendingUpgradeChoices = pickRandomChoices(pool, Math.min(3, pool.length));
   world.phase = "levelup";
@@ -124,7 +135,7 @@ export function updateGrowth(world: WorldState, now: number): void {
 
   while (world.exp >= world.expToNext) {
     world.exp -= world.expToNext;
-    grantLevelUp(world);
+    grantLevelUp(world, now);
     world.expToNext = requiredExpForLevel(world.level + 1);
     if (world.phase === "levelup") break; // 레벨업 다이얼로그가 뜨면 다음 판단은 재개 후로 미룬다
   }
