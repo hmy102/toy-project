@@ -24,7 +24,12 @@ export function DeepSeaRunGame() {
       {snapshot.phase === "start" && <StartScreen onStart={actions.start} />}
 
       {snapshot.phase === "levelup" && snapshot.pendingUpgradeChoices && (
-        <LevelUpDialog choices={snapshot.pendingUpgradeChoices} onChoose={actions.chooseUpgrade} />
+        <LevelUpDialog
+          choices={snapshot.pendingUpgradeChoices}
+          weapons={snapshot.weapons}
+          passives={snapshot.passives}
+          onChoose={actions.chooseUpgrade}
+        />
       )}
 
       {snapshot.phase === "core-module" && snapshot.pendingCoreModuleChoices && (

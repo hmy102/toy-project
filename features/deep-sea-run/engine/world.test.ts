@@ -1,18 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PASSIVE_DEFS,
   PASSIVE_MAX_LEVEL,
   PLANKTON_EXP_VALUE,
   PLANKTON_SPAWN_INTERVAL_SEC,
   SUB_MAX_HULL,
   SUB_MAX_SHIELD,
   TETHER_LEAVE_GRACE_SEC,
+  WEAPON_DEFS,
   WEAPON_MAX_LEVEL,
   requiredExpForLevel,
 } from "./constants";
 import { applyDamageToSubmarine, createSubmarine, updateTetherEffects } from "./submarine";
 import { createCore } from "./core";
-import { applyUpgradeChoice } from "./growth";
+import { applyUpgradeChoice, buildUpgradePool } from "./growth";
 import { damageMonster } from "./monsters";
 import { updateWeapons } from "./weapons";
 import { createWorld } from "./world";
@@ -137,6 +139,28 @@ describe("무기 자동 조준", () => {
   });
 });
 
+describe("초전도 축전지", () => {
+  it("레벨을 올리면 테슬라 방전 코일의 발사 간격만 줄어든다", () => {
+    const fireOnce = (capacitorLevel: number) => {
+      const world = createWorld();
+      world.weapons.tesla.level = 1;
+      world.weapons.harpoon.level = 1;
+      world.passives.capacitor.level = capacitorLevel;
+      world.monsters.push(
+        makeMonster({ id: 9, kind: "krill", pos: { x: world.submarine.pos.x + 50, y: world.submarine.pos.y }, hp: 14, maxHp: 14 }),
+      );
+      updateWeapons(world, 0.016, 1);
+      return { tesla: world.weapons.tesla.cooldownRemaining, harpoon: world.weapons.harpoon.cooldownRemaining };
+    };
+
+    const base = fireOnce(0);
+    const boosted = fireOnce(PASSIVE_MAX_LEVEL);
+
+    expect(boosted.tesla).toBeCloseTo(base.tesla * (1 - PASSIVE_DEFS.capacitor.perLevel * PASSIVE_MAX_LEVEL));
+    expect(boosted.harpoon).toBeCloseTo(base.harpoon);
+  });
+});
+
 describe("성장 곡선 (유보 결정 — 05:00 전후 첫 오버차지, 09:00 전 두 번째 오버차지)", () => {
   it("이상적인(즉시 습득) 파밍 속도를 가정하면 목표 시간 안에 두 차례 오버차지에 도달한다", () => {
     const world = createWorld();
@@ -180,5 +204,40 @@ describe("성장 곡선 (유보 결정 — 05:00 전후 첫 오버차지, 09:00 
     // 목표 시각(05:00=300s, 09:00=540s)보다 여유 있게 도달해야 한다.
     expect(firstOverchargeAt!).toBeLessThan(300);
     expect(secondOverchargeAt!).toBeLessThan(540);
+  });
+});
+
+describe("레벨업 선택지 구성", () => {
+  it("무기가 하나도 없으면 무기 4종만 후보가 되고, 그중 3개가 제시된다", () => {
+    const world = createWorld();
+    const pool = buildUpgradePool(world);
+
+    expect(pool).toHaveLength(4);
+    expect(pool.every((choice) => choice.kind === "weapon")).toBe(true);
+    expect(new Set(pool.map((choice) => choice.id)).size).toBe(4);
+  });
+
+  it("무기를 하나 갖추면 그 무기의 대응 패시브만 후보에 추가된다", () => {
+    const world = createWorld();
+    world.weapons.sonar.level = 1;
+
+    const pool = buildUpgradePool(world);
+    const passives = pool.filter((choice) => choice.kind === "passive");
+
+    expect(pool).toHaveLength(5);
+    expect(passives).toEqual([{ kind: "passive", id: WEAPON_DEFS.sonar.passiveId }]);
+  });
+
+  it("보유하지 않은 무기의 패시브는 끝까지 후보에 오르지 않는다", () => {
+    const world = createWorld();
+    world.weapons.harpoon.level = 3;
+    world.weapons.tesla.level = 2;
+
+    const pool = buildUpgradePool(world);
+    const passiveIds = pool.filter((choice) => choice.kind === "passive").map((choice) => choice.id);
+
+    expect(passiveIds.sort()).toEqual([WEAPON_DEFS.harpoon.passiveId, WEAPON_DEFS.tesla.passiveId].sort());
+    expect(passiveIds).not.toContain(WEAPON_DEFS.sonar.passiveId);
+    expect(passiveIds).not.toContain(WEAPON_DEFS.torpedo.passiveId);
   });
 });

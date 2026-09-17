@@ -1,6 +1,7 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  PASSIVE_DEFS,
   PASSIVE_MAX_LEVEL,
   PLANKTON_EXP_VALUE,
   PLANKTON_MAX_CONCURRENT,
@@ -50,7 +51,9 @@ function randomPlanktonPosition(): { x: number; y: number } {
   return { x: ARENA_WIDTH - inset, y: Math.random() * ARENA_HEIGHT };
 }
 
-function buildUpgradePool(world: WorldState): UpgradeChoice[] {
+// 패시브 모듈은 대응 무기를 실제로 갖췄을 때만 제시한다. 무기 없이 패시브만 쌓이면
+// 올린 레벨이 아무것도 강화하지 않으므로, 무기가 하나도 없는 동안에는 무기만 후보가 된다.
+export function buildUpgradePool(world: WorldState): UpgradeChoice[] {
   const pool: UpgradeChoice[] = [];
 
   (Object.keys(world.weapons) as WeaponId[]).forEach((weaponId) => {
@@ -68,6 +71,7 @@ function buildUpgradePool(world: WorldState): UpgradeChoice[] {
 
   (Object.keys(world.passives) as PassiveId[]).forEach((passiveId) => {
     if (world.passives[passiveId].level >= PASSIVE_MAX_LEVEL) return;
+    if (world.weapons[PASSIVE_DEFS[passiveId].weaponId].level <= 0) return;
     pool.push({ kind: "passive", id: passiveId });
   });
 

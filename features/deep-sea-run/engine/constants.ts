@@ -59,12 +59,17 @@ export interface WeaponBaseStats {
   id: WeaponId;
   name: string;
   passiveId: PassiveId;
+  // 레벨업 선택지에서 처음 보는 플레이어에게 무기의 동작을 설명하는 한 문장
+  description: string;
+  // extra 수치가 무엇을 뜻하는지 가리키는 표시용 라벨
+  extraLabel: string;
   damage: number;
   cooldown: number;
   // sonar: radius(px), harpoon: pierce count, tesla: chain count, torpedo: explode radius(px)
   extra: number;
   overcharge: {
     name: string;
+    description: string;
     damage: number;
     cooldown: number;
     extra: number;
@@ -76,20 +81,31 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponBaseStats> = {
     id: "sonar",
     name: "고주파 소나",
     passiveId: "amplifier",
+    description: "잠수정을 중심으로 음파를 터뜨려 반경 안의 적을 한꺼번에 때린다. 조준이 필요 없다.",
+    extraLabel: "반경",
     damage: 28,
     cooldown: 1.4,
     extra: 190,
-    overcharge: { name: "공진 파쇄파", damage: 95, cooldown: 0.9, extra: 340 },
+    overcharge: {
+      name: "공진 파쇄파",
+      description: "반경이 크게 넓어지고, 맞은 적은 0.8초 굳은 채 2초 동안 어둠 속에서도 드러난다.",
+      damage: 95,
+      cooldown: 0.9,
+      extra: 340,
+    },
   },
   harpoon: {
     id: "harpoon",
     name: "압축 수중 작살",
     passiveId: "piston",
+    description: "가장 가까운 적에게 작살을 쏜다. 적을 꿰뚫고 나아가 뒤에 겹친 적까지 맞힌다.",
+    extraLabel: "관통",
     damage: 75,
     cooldown: 1.1,
     extra: 2,
     overcharge: {
       name: "초공포 랜스",
+      description: "관통 제한이 사실상 사라져 일직선에 놓인 적을 모두 꿰뚫는다.",
       damage: 280,
       cooldown: 0.65,
       extra: 99,
@@ -99,20 +115,31 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponBaseStats> = {
     id: "tesla",
     name: "테슬라 방전 코일",
     passiveId: "capacitor",
+    description: "가장 가까운 적에게 전류를 흘리고, 그 적에서 근처 적으로 번개가 연쇄한다.",
+    extraLabel: "연쇄",
     damage: 18,
     cooldown: 1.2,
     extra: 4,
-    overcharge: { name: "심해 아크 메일스트롬", damage: 48, cooldown: 0.7, extra: 10 },
+    overcharge: {
+      name: "심해 아크 메일스트롬",
+      description: "연쇄가 길어지고, 번개가 지나간 자리에 1.5초 동안 감전 지대가 남는다.",
+      damage: 48,
+      cooldown: 0.7,
+      extra: 10,
+    },
   },
   torpedo: {
     id: "torpedo",
     name: "열수 유도 어뢰",
     passiveId: "thermal",
+    description: "가장 가까운 적을 향해 어뢰를 쏘고, 맞은 자리에서 터져 주변 적까지 함께 태운다.",
+    extraLabel: "폭발 반경",
     damage: 160,
     cooldown: 2.8,
     extra: 100,
     overcharge: {
       name: "지열 폭심 어뢰",
+      description: "코어 근처에서 가장 튼튼한 적을 우선 노리고, 폭발 반경이 크게 넓어진다.",
       damage: 520,
       cooldown: 1.8,
       extra: 180,
@@ -124,7 +151,10 @@ export interface PassiveBaseStats {
   id: PassiveId;
   name: string;
   weaponId: WeaponId;
+  // 이 모듈이 대응 무기를 어떻게 바꾸는지 설명하는 한 문장
   description: string;
+  // 레벨 하나당 붙는 효과의 수치 표기
+  effect: string;
   perLevel: number;
 }
 
@@ -133,28 +163,32 @@ export const PASSIVE_DEFS: Record<PassiveId, PassiveBaseStats> = {
     id: "amplifier",
     name: "음향 증폭기",
     weaponId: "sonar",
-    description: "공격 범위 +12%",
+    description: "고주파 소나의 음파가 닿는 반경을 넓힌다.",
+    effect: "레벨당 공격 범위 +12%",
     perLevel: 0.12,
   },
   piston: {
     id: "piston",
     name: "유압 가압 피스톤",
     weaponId: "harpoon",
-    description: "탄속 +20%, 넉백",
+    description: "압축 수중 작살을 더 빠르게 쏘고, 맞은 적을 뒤로 밀어낸다.",
+    effect: "레벨당 탄속 +20%, 넉백",
     perLevel: 0.2,
   },
   capacitor: {
     id: "capacitor",
     name: "초전도 축전지",
     weaponId: "tesla",
-    description: "쿨타임 -10%",
+    description: "테슬라 방전 코일의 재충전을 앞당겨 더 자주 터뜨린다.",
+    effect: "레벨당 쿨타임 -10%",
     perLevel: 0.1,
   },
   thermal: {
     id: "thermal",
     name: "열감지 분석기",
     weaponId: "torpedo",
-    description: "치명타율 +10%",
+    description: "열수 유도 어뢰가 약점을 짚어 치명타를 낼 확률을 올린다.",
+    effect: "레벨당 치명타 확률 +10% (피해 1.5배)",
     perLevel: 0.1,
   },
 };
