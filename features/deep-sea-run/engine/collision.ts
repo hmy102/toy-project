@@ -1,4 +1,5 @@
 import {
+  CORE_GLOW_RADIUS,
   TURRET_BEAM_RANGE,
   TURRET_BEAM_WIDTH_DEG,
   VISION_CONE_DEG,
@@ -34,6 +35,11 @@ export function isInTurretBeam(core: Core, targetPos: { x: number; y: number }):
   return diff <= (TURRET_BEAM_WIDTH_DEG * Math.PI) / 180 / 2;
 }
 
+/** 코어 자체의 근접 미광 범위인지. 터렛 모듈 여부와 무관하게 항상 적용된다. */
+export function isNearCore(core: Core, targetPos: { x: number; y: number }): boolean {
+  return distance(core.pos, targetPos) <= CORE_GLOW_RADIUS;
+}
+
 /** 현재 프레임의 밝힘 상태를 계산한다. 유령 오징어는 피격 전까지 어떤 빛으로도 드러나지 않는다. */
 export function computeVisibility(
   monster: Monster,
@@ -44,5 +50,9 @@ export function computeVisibility(
 ): boolean {
   if (monster.kind === "ghost_squid" && !monster.revealed) return false;
   if ((monster.forcedVisibleUntil ?? 0) > now) return true;
-  return isInVisionCone(sub_, monster.pos) || (turretActive && isInTurretBeam(core, monster.pos));
+  return (
+    isInVisionCone(sub_, monster.pos) ||
+    isNearCore(core, monster.pos) ||
+    (turretActive && isInTurretBeam(core, monster.pos))
+  );
 }
