@@ -107,7 +107,7 @@ export function tick(world: WorldState, dt: number, input: GameInput): void {
 
   const turretActive = world.coreModules.includes("searchlight_turret") && !empActive;
   for (const monster of world.monsters) {
-    monster.visible = computeVisibility(monster, submarine, core, turretActive, now);
+    monster.visible = computeVisibility(monster, submarine, core, turretActive, world.level, now);
   }
 
   updateMonsterBehavior(world, dt, now);

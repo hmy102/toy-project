@@ -24,8 +24,23 @@ export const SUB_RADIUS = 16;
 export const SUB_INVULN_SEC = 0.5;
 
 export const VISION_CONE_DEG = 95;
-export const VISION_RANGE = 350;
 export const VISION_GLOW_RADIUS = 90;
+
+// 서치라이트는 레벨이 오를수록 더 멀리 닿는다. 부채꼴 각도는 고정이라 훑는 폭은
+// 그대로고, 미리 볼 수 있는 거리만 길어진다. 상한을 두어 암흑의 긴장을 남긴다.
+export const VISION_RANGE_BASE = 350;
+export const VISION_RANGE_PER_LEVEL = 12;
+export const VISION_RANGE_MAX = 560;
+
+export function visionRangeForLevel(level: number): number {
+  return Math.min(VISION_RANGE_MAX, VISION_RANGE_BASE + (level - 1) * VISION_RANGE_PER_LEVEL);
+}
+
+// 서치라이트에서 또렷하게 밝은 구간의 길이. 사거리와 무관한 고정값이라,
+// 사거리가 늘면 밝은 구간이 아니라 그 너머로 옅게 퍼지는 거리가 길어진다.
+export const VISION_BEAM_SOLID_RANGE = 240;
+// 레벨업 직후 새 사거리까지 한 번 퍼지는 빛 파동의 지속 시간.
+export const VISION_GROW_EFFECT_SEC = 1.1;
 
 // 코어 자체가 내는 근접 미광. 터렛 모듈 유무와 무관하게 상시 켜져 있어
 // 아주 가까이 붙은 적을 감지한다.
@@ -232,8 +247,8 @@ export const NANO_DRONE_CORE_REGEN_PER_SEC = 30;
 export const TURRET_SLOW_RATIO = 0.4;
 export const TURRET_DAMAGE_TAKEN_BONUS = 0.25;
 export const TURRET_ROTATE_SPEED = Math.PI * 0.6; // rad/s
-export const TURRET_BEAM_WIDTH_DEG = 40;
-export const TURRET_BEAM_RANGE = 420;
+export const TURRET_BEAM_WIDTH_DEG = 50;
+export const TURRET_BEAM_RANGE = 470;
 
 export interface MonsterBaseStats {
   kind: MonsterKind;

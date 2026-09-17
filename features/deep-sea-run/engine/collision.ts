@@ -4,7 +4,7 @@ import {
   TURRET_BEAM_WIDTH_DEG,
   VISION_CONE_DEG,
   VISION_GLOW_RADIUS,
-  VISION_RANGE,
+  visionRangeForLevel,
 } from "./constants";
 import type { Core, Monster, Submarine } from "./types";
 import { angleDiff, angleOf, distance, sub } from "./vector";
@@ -18,11 +18,16 @@ export function circlesOverlap(
   return distance(posA, posB) <= radiusA + radiusB;
 }
 
-export function isInVisionCone(sub_: Submarine, targetPos: { x: number; y: number }): boolean {
+/** 서치라이트 부채꼴 판정. 각도는 고정이고 사거리만 잠수정 레벨을 따라 늘어난다. */
+export function isInVisionCone(
+  sub_: Submarine,
+  targetPos: { x: number; y: number },
+  level: number
+): boolean {
   const toTarget = sub(targetPos, sub_.pos);
   const dist = Math.hypot(toTarget.x, toTarget.y);
   if (dist <= VISION_GLOW_RADIUS) return true;
-  if (dist > VISION_RANGE) return false;
+  if (dist > visionRangeForLevel(level)) return false;
   const diff = Math.abs(angleDiff(angleOf(toTarget), sub_.aimAngle));
   return diff <= (VISION_CONE_DEG * Math.PI) / 180 / 2;
 }
@@ -46,12 +51,13 @@ export function computeVisibility(
   sub_: Submarine,
   core: Core,
   turretActive: boolean,
+  level: number,
   now: number
 ): boolean {
   if (monster.kind === "ghost_squid" && !monster.revealed) return false;
   if ((monster.forcedVisibleUntil ?? 0) > now) return true;
   return (
-    isInVisionCone(sub_, monster.pos) ||
+    isInVisionCone(sub_, monster.pos, level) ||
     isNearCore(core, monster.pos) ||
     (turretActive && isInTurretBeam(core, monster.pos))
   );
